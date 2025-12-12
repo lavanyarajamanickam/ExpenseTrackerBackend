@@ -1,78 +1,115 @@
-const express= require('express')
-const mongoose=require('mongoose');
-const cors=require('cors')
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
 
+const app = express();
+const PORT = process.env.PORT||4000;
 
-const app=express();
-const PORT=4000;
+// MongoDB connection string
 
-
-const MONGO_URI='mongodb+srv://lavanya143064:lavanya@cluster0.qzw9lzo.mongodb.net/exp?retryWrites=true&w=majority&appName=Cluster0'
+const MONGO_URI = process.env.MONGO_URI;
+// Middlewares
 app.use(cors());
 app.use(express.json());
-const connectDb=async()=>{
-    try{
+
+// Database connection
+const connectDb = async () => {
+    try {
         await mongoose.connect(MONGO_URI);
-        console.log('connected to MongoDB');
-    }catch(err){
-        console.log('Error connecting to MongoDB',err)
+        console.log('Connected to MongoDB');
+    } catch (err) {
+        console.log('Error connecting to MongoDB:', err);
         process.exit(1);
     }
-            }
-    const expenseSchema=new mongoose.Schema({
-        title:{
-               type:String,
-                required:true
-                },
-        amount:{
-                type:Number,
-                required:true
+};
 
-                }
-            })
-    const Expense=mongoose.model('Expense',expenseSchema);
-    app.post('/expenses',async(req,res)=>{
-            try{
-                const{title,amount}=req.body;
-                const expense=new Expense ({title,amount})
-                await expense.save();
-                res.status(201).json(expense);
+// Schema
+const expenseSchema = new mongoose.Schema({
+    title: {
+        type: String,
+        required: true
+    },
+    amount: {
+        type: Number,
+        required: true
+    }
+});
 
-                }
-            catch(error){
-                    console.error('Error saving expense',error)
-                    res.status(500).json({error:'Internal server error'})
-                }
-            })
+// Model
+const Expense = mongoose.model('Expense', expenseSchema);
 
-    app.get('/expenses', async(req,res) => {
-            try{
-                const expense=await Expense.find();
-                res.json(expense)
-               }
-            catch(error){
-                console.log('Error fetching expense',error)
-                res.sendStatus(500).json({error:'Internal server eror'})
-                }
-                 });
-              
-    app.delete('/expenses/:id',async(req,res)=>{
-            try {
-                const deleteExpenses=await Expense.findByIdAndDelete(req.params.id)
-                if(!deleteExpenses){
-                   return res.status(404).json({error:"Expenses not found"})
-                }
-               res.json({message:"Delete successfully"})
-                }
-            catch(error){
-                console.log("Error deleting expense:",error)
-                res.status(500).json({error:"Failed to delete expense"})
+// ---------------------- ROUTES ----------------------
 
+// CREATE expense
+app.post('/expenses', async (req, res) => {
+    try {
+        const { title, amount } = req.body;
+
+        const expense = new Expense({ title, amount });
+        await expense.save();
+        res.status(201).json(expense);
+
+    } catch (error) {
+        console.error('Error saving expense:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// READ all expenses
+app.get('/expenses', async (req, res) => {
+    try {
+        const expenses = await Expense.find();
+        res.json(expenses);
+
+    } catch (error) {
+        console.log('Error fetching expenses:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// DELETE expense
+app.delete('/expenses/:id', async (req, res) => {
+    try {
+        const deletedExpense = await Expense.findByIdAndDelete(req.params.id);
+
+        if (!deletedExpense) {
+            return res.status(404).json({ error: 'Expense not found' });
         }
-    })
-    app.put
-connectDb().then(()=>{
-app.listen(PORT,()=>{
-    console.log(`server is running on http://localhost:${PORT}`)
-})
-})
+
+        res.json({ message: 'Deleted successfully' });
+
+    } catch (error) {
+        console.log('Error deleting expense:', error);
+        res.status(500).json({ error: 'Failed to delete expense' });
+    }
+});
+
+// UPDATE expense
+app.put('/expenses/:id', async (req, res) => {
+    try {
+        const { title, amount } = req.body;
+
+        const updatedExpense = await Expense.findByIdAndUpdate(
+            req.params.id,
+            { title, amount },
+            { new: true }
+        );
+
+        if (!updatedExpense) {
+            return res.status(404).json({ error: 'Expense not found' });
+        }
+
+        res.json(updatedExpense);
+
+    } catch (error) {
+        console.log('Error updating expense:', error);
+        res.status(500).json({ error: 'Failed to update expense' });
+    }
+});
+
+// Start server
+connectDb().then(() => {
+    app.listen(PORT, () => {
+        console.log(`Server is running on http://localhost:${PORT}`);
+    });
+});
