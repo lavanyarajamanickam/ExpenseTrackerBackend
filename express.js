@@ -7,7 +7,7 @@ const PORT = process.env.PORT||4000;
 
 // MongoDB connection string
 
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = 'mongodb+srv://lavanya143064:lavanya143@cluster0.qzw9lzo.mongodb.net/?appName=Cluster0';
 // Middlewares
 app.use(cors());
 app.use(express.json());
